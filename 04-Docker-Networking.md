@@ -1,0 +1,60 @@
+### 04. Docker Networking
+
+#### Check your docker networks
+```
+docker network ls
+```
+#### To create closed container
+```
+docker run -d --net none busybox sleep 1000
+docker exec -it <container-id> /bin/ash
+ping 8.8.8.8 // No network access
+ifconfig // loopback interface should be displayed
+```
+#### Bridge network container
+```
+docker network ls
+docker network inspect bridge
+docker run -d --name container_1 busybox sleep 1000
+docker exec -it container_1 ifconfig
+docker run -d --name container_2 busybox sleep 1000
+docker exec -it container_2 ifconfig
+docker exec -it container_1 ping 172.16.0.3
+```
+#### You can create custom bridge networks
+```
+docker network create --driver bridge <name of that new bridge network>
+docker network ls
+docker network inspect <name of that new bridge network>
+docker run -d --name container_3 --net my_bridge_network busybox sleep 1000
+docker exec -it container_3 ifconfig
+docker network connect bridge container_3 // will connect your network to that new container
+docker network disconnect bridge container_3
+docker exec -it container_3 ifconfig
+```
+#### Host Network is the least protected network container. It will have all network interfaces on the machine. Better performance.
+```
+docker run -d --name container_4 --net host busybox sleep 1000
+docker exec -it container_4 ifconfig
+```
+#### Overlay Network. Can support multi-host networking out-of-the-box.
+#### You can edit yml and specify your network.
+```
+version: '3'
+services: 
+	dockerapp:
+		buid: .
+		ports:
+			- "5000:5000"
+		depends_on:
+			- redis
+		networks:
+			-my_net
+		redis:
+			image: redis:3.2.0
+			networks:
+				-my_net
+networks:
+	my_net:
+		driver: bridge
+```
